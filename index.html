@@ -12,11 +12,12 @@
         .terminal { border: 1px solid #aaa; padding: 5px; width: 220px; }
         .terminal h3 { margin: 5px 0; font-size: 14px; text-align: center; }
         .posicoes { display: flex; flex-wrap: wrap; gap: 3px; }
-        .posicao { width: 30px; height: 30px; background: #e0e0e0; display: flex; justify-content: center; align-items: center; font-size: 10px; cursor: pointer; }
-        .ocupada { background: #ff5555; color: white; }
-        .livre:hover { background: #a0e0a0; }
+        .posicao { width: 60px; height: 30px; background: #e0e0e0; display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 2px; cursor: default; }
+        .ocupada { background: #ffcccc; }
+        .livre:hover { background: #a0e0a0; cursor: pointer; }
         .voo-item { margin-bottom: 5px; padding: 5px; border: 1px solid #ccc; }
         select { width: 100%; }
+        button { margin-left: 5px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -96,9 +97,20 @@
         if (el && !el.classList.contains("ocupada")) {
             el.classList.remove("livre");
             el.classList.add("ocupada");
-            el.textContent = vooId;
+            el.innerHTML = `${vooId} <button onclick="decolar('${pos}')">Decolar</button>`;
             posicoesOcupadas.add(pos);
             select.disabled = true;
+            atualizarDropdowns();
+        }
+    }
+
+    function decolar(pos) {
+        const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
+        if (el) {
+            el.classList.remove("ocupada");
+            el.classList.add("livre");
+            el.textContent = pos;
+            posicoesOcupadas.delete(pos);
             atualizarDropdowns();
         }
     }
