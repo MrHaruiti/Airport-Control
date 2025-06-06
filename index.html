@@ -1,122 +1,186 @@
 
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Simulador de Controle de Pátio</title>
-    <style>
-        body { font-family: Arial; display: flex; margin: 0; height: 100vh; }
-        #voos, #painel { padding: 10px; overflow-y: auto; }
-        #voos { width: 30%; border-right: 1px solid #ccc; }
-        #painel { width: 70%; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: flex-start; }
-        .terminal { border: 1px solid #aaa; padding: 5px; width: 220px; }
-        .terminal h3 { margin: 5px 0; font-size: 14px; text-align: center; }
-        .posicoes { display: flex; flex-wrap: wrap; gap: 3px; }
-        .posicao { width: 60px; height: 30px; background: #e0e0e0; display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 2px; cursor: default; }
-        .ocupada { background: #ffcccc; }
-        .livre:hover { background: #a0e0a0; cursor: pointer; }
-        .voo-item { margin-bottom: 5px; padding: 5px; border: 1px solid #ccc; }
-        select { width: 100%; }
-        button { margin-left: 5px; font-size: 10px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Simulador Completo - Controle de Pátio</title>
+  <style>
+    body { font-family: sans-serif; background: #f2f2f2; padding: 20px; }
+    h1 { margin-top: 0; }
+    .painel { display: flex; flex-wrap: wrap; gap: 15px; }
+    .voo { background: white; padding: 10px; border-radius: 5px; width: 300px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .status { font-weight: bold; margin: 5px 0; }
+    .delayed { color: orange; }
+    .cancelado { color: red; }
+    .emsolo { color: green; }
+    button { margin-top: 5px; width: 100%; }
+    select { width: 100%; margin-top: 5px; }
+  </style>
 </head>
 <body>
-    <div id="voos">
-        <h2>Voos Aguardando</h2>
-        <div id="lista-voos"></div>
-    </div>
-    <div id="painel"></div>
+  <h1>Simulador Completo de Controle de Pátio</h1>
+  <div id="hora"></div>
+  <div id="painel" class="painel"></div>
 
 <script>
-    const voos = [
-        { id: "EK123", companhia: "Emirates" },
-        { id: "AF456", companhia: "Air France" },
-        { id: "JL789", companhia: "JAL" },
-        { id: "LA321", companhia: "LATAM" },
-        { id: "BA654", companhia: "British Airways" },
-    ];
+let data = {};
+let exibidos = new Set();
+let aeronavesEmSolo = [];
+let bloqueioPouso = false;
+let bloqueioDecolagem = false;
 
-    const posicoesOcupadas = new Set();
+function atualizarHora() {
+  const agora = new Date();
+  document.getElementById("hora").innerText = "Hora atual: " + agora.toLocaleTimeString();
+  return agora;
+}
 
-    function gerarTerminais() {
-        const painel = document.getElementById("painel");
-        for (let t = 1; t <= 10; t++) {
-            const terminal = document.createElement("div");
-            terminal.className = "terminal";
-            terminal.innerHTML = `<h3>Terminal TPS${t}</h3>`;
-            const posicoes = document.createElement("div");
-            posicoes.className = "posicoes";
+function carregarVoos() {
+  fetch('voos.json')
+    .then(resp => resp.json())
+    .then(json => {
+      data = json;
+    });
+}
 
-            for (let p = 1; p <= 36; p++) {
-                const posNum = t * 100 + p;
-                const posDiv = document.createElement("div");
-                posDiv.className = "posicao livre";
-                posDiv.dataset.codigo = posNum;
-                posDiv.textContent = posNum;
-                posicoes.appendChild(posDiv);
-            }
+function mostrarVoos(agora) {
+  const painel = document.getElementById("painel");
+  const todos = data.chegadas.concat(data.partidas.map(p => ({...p, tipo: "partida"})));
 
-            terminal.appendChild(posicoes);
-            painel.appendChild(terminal);
-        }
+  todos.forEach(voo => {
+    if (exibidos.has(voo.voo)) return;
+
+    const [h, m] = voo.horario.split(":").map(Number);
+    const horaVoo = new Date();
+    horaVoo.setHours(h, m, 0, 0);
+    const diffMin = (horaVoo - agora) / 60000;
+
+    if (voo.tipo === "partida") {
+      if (aeronavesEmSolo.find(a => a.companhia === voo.companhia && a.aeronave === voo.aeronave) && diffMin <= 0) {
+        criarPainelPartida(voo);
+        exibidos.add(voo.voo);
+      }
+    } else {
+      if (diffMin <= 60 && diffMin >= -15) {
+        criarPainelChegada(voo, diffMin);
+        exibidos.add(voo.voo);
+      }
     }
+  });
+}
 
-    function listarVoos() {
-        const container = document.getElementById("lista-voos");
-        voos.forEach(voo => {
-            const div = document.createElement("div");
-            div.className = "voo-item";
-            div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia})<br>
-                <label>Alocar posição:</label>
-                <select onchange="alocarVoo('${voo.id}', this)">
-                    <option value="">-- Selecionar --</option>
-                </select>`;
-            container.appendChild(div);
-        });
-        atualizarDropdowns();
-    }
+function criarPainelChegada(voo, diffMin) {
+  const painel = document.getElementById("painel");
+  const div = document.createElement("div");
+  div.className = "voo";
+  div.id = "voo-" + voo.voo;
+  const status = diffMin < -15 ? "Delayed" : "Aguardando";
+  div.innerHTML = `
+    <strong>${voo.companhia} - ${voo.voo}</strong><br>
+    Aeronave: ${voo.aeronave}<br>
+    TPS: ${voo.tps || "-"}<br>
+    Horário: ${voo.horario}<br>
+    <div class="status" id="status-${voo.voo}">${status}</div>
+    <div class="controles" id="controles-${voo.voo}">
+      <button onclick="autorizarPouso('${voo.voo}')">Pousar</button>
+      <button onclick="marcarAtrasado('${voo.voo}')">Atrasado</button>
+      <button onclick="cancelar('${voo.voo}')">Cancelar</button>
+    </div>
+  `;
+  painel.appendChild(div);
+}
 
-    function atualizarDropdowns() {
-        const livres = Array.from(document.querySelectorAll(".posicao.livre"))
-                            .map(p => p.dataset.codigo);
-        document.querySelectorAll("select").forEach(select => {
-            select.innerHTML = '<option value="">-- Selecionar --</option>';
-            livres.forEach(pos => {
-                const option = document.createElement("option");
-                option.value = pos;
-                option.text = pos;
-                select.appendChild(option);
-            });
-        });
-    }
+function criarPainelPartida(voo) {
+  const painel = document.getElementById("painel");
+  const div = document.createElement("div");
+  div.className = "voo";
+  div.id = "partida-" + voo.voo;
+  div.innerHTML = `
+    <strong>${voo.companhia} - ${voo.voo}</strong><br>
+    Aeronave: ${voo.aeronave}<br>
+    Destino: ${voo.destino || "-"}<br>
+    Saída: ${voo.horario}<br>
+    <div class="status" id="status-${voo.voo}">Aguardando Pushback</div>
+    <div id="controles-${voo.voo}">
+      <button onclick="autorizarPushback('${voo.voo}')">Pushback</button>
+    </div>
+  `;
+  painel.appendChild(div);
+}
 
-    function alocarVoo(vooId, select) {
-        const pos = select.value;
-        if (!pos) return;
-        const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-        if (el && !el.classList.contains("ocupada")) {
-            el.classList.remove("livre");
-            el.classList.add("ocupada");
-            el.innerHTML = `${vooId} <button onclick="decolar('${pos}')">Decolar</button>`;
-            posicoesOcupadas.add(pos);
-            select.disabled = true;
-            atualizarDropdowns();
-        }
-    }
+function atualizarStatus(id, texto, classe="") {
+  const el = document.getElementById("status-" + id);
+  el.innerText = texto;
+  el.className = "status " + classe;
+}
 
-    function decolar(pos) {
-        const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-        if (el) {
-            el.classList.remove("ocupada");
-            el.classList.add("livre");
-            el.textContent = pos;
-            posicoesOcupadas.delete(pos);
-            atualizarDropdowns();
-        }
-    }
+function removerControles(id) {
+  const el = document.getElementById("controles-" + id);
+  if (el) el.remove();
+}
 
-    gerarTerminais();
-    listarVoos();
+function autorizarPouso(vooId) {
+  if (bloqueioPouso) return alert("Aguarde 35 segundos para novo pouso.");
+  atualizarStatus(vooId, "Pousando...");
+  removerControles(vooId);
+  bloqueioPouso = true;
+  setTimeout(() => {
+    atualizarStatus(vooId, "Em solo", "emsolo");
+    const voo = data.chegadas.find(v => v.voo === vooId);
+    aeronavesEmSolo.push({companhia: voo.companhia, aeronave: voo.aeronave});
+  }, 5 * 60 * 1000); // 5 minutos
+  setTimeout(() => {
+    bloqueioPouso = false;
+  }, 35 * 1000);
+}
+
+function autorizarPushback(vooId) {
+  atualizarStatus(vooId, "Taxiando...");
+  removerControles(vooId);
+  setTimeout(() => {
+    const div = document.getElementById("partida-" + vooId);
+    const controles = document.createElement("div");
+    controles.id = "controles-" + vooId;
+    controles.innerHTML = `<button onclick="autorizarDecolagem('${vooId}')">Autorizar Decolagem</button>`;
+    div.appendChild(controles);
+    atualizarStatus(vooId, "Pronto para decolar");
+  }, 5 * 60 * 1000); // 5 minutos taxiando
+}
+
+function autorizarDecolagem(vooId) {
+  if (bloqueioDecolagem) return alert("Aguarde 20 segundos entre decolagens.");
+  atualizarStatus(vooId, "Decolando...");
+  removerControles(vooId);
+  bloqueioDecolagem = true;
+  setTimeout(() => {
+    const div = document.getElementById("partida-" + vooId);
+    if (div) div.remove();
+  }, 15000); // 15 segundos
+  setTimeout(() => {
+    bloqueioDecolagem = false;
+  }, 20000);
+}
+
+function marcarAtrasado(id) {
+  atualizarStatus(id, "Delayed", "delayed");
+}
+
+function cancelar(id) {
+  atualizarStatus(id, "Cancelado", "cancelado");
+  removerControles(id);
+  setTimeout(() => {
+    const el = document.getElementById("voo-" + id);
+    if (el) el.remove();
+  }, 60 * 60 * 1000);
+}
+
+function loop() {
+  const agora = atualizarHora();
+  mostrarVoos(agora);
+}
+
+carregarVoos();
+setInterval(loop, 10000);
 </script>
 </body>
 </html>
