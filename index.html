@@ -40,6 +40,7 @@
       margin-bottom: 1.5rem;
       line-height: 1.1;
       user-select: none;
+      letter-spacing: -0.015em;
     }
     .voo-item, .chegada-item, .partida-item {
       background: #f9fafb;
@@ -54,9 +55,9 @@
       justify-content: space-between;
       align-items: center;
       line-height: 1.3;
+      cursor: default;
       border: 1px solid transparent;
       transition: border-color 0.25s ease;
-      cursor: default;
     }
     .voo-item:hover,
     .chegada-item:hover,
@@ -82,6 +83,7 @@
     }
     select:focus, button:focus {
       outline: 3px solid #2563eb;
+      outline-offset: 3px;
     }
     select:hover, button:hover:not(:disabled) {
       background: #e0e7ff;
@@ -112,6 +114,7 @@
       flex-direction: column;
       border: 1px solid #e5e7eb;
       transition: box-shadow 0.3s ease;
+      user-select: none;
     }
     .terminal:hover {
       box-shadow: 0 10px 36px rgba(0,0,0,0.15);
@@ -248,14 +251,14 @@
 
     async function buscarVoos() {
       try {
-        const url = "https://raw.githubusercontent.com/MrHaruiti/Airport-Control/main/backup_voos.json";
+        const url = "https://raw.githubusercontent.com/MrHaruiti/Airport-Control/refs/heads/main/backup_voos.json";
         const res = await fetch(url);
         if(!res.ok) throw new Error('Erro ao buscar JSON: ' + res.statusText);
         const dados = await res.json();
         return dados.voos.map(v => ({...v, horario: new Date(v.horario)}));
       } catch(e) {
         console.error(e);
-        alert('Falha ao carregar voos. Veja o console para detalhes.');
+        alert('Falha ao carregar voos. Veja o console.');
         return [];
       }
     }
@@ -268,19 +271,19 @@
         const terminal = document.createElement('div');
         terminal.className = 'terminal';
         terminal.innerHTML = `<h3>Terminal TPS${t}</h3>`;
-        const posicoesDiv = document.createElement('div');
-        posicoesDiv.className = 'posicoes';
+        const containerPos = document.createElement('div');
+        containerPos.className = 'posicoes';
 
         for(let p=1; p<=36; p++) {
           const posNum = t * 100 + p;
           const posDiv = document.createElement('div');
-          posDiv.className = 'posicao livre';
           posDiv.dataset.codigo = posNum;
+          posDiv.className = 'posicao livre';
           posDiv.textContent = posNum;
-          posicoesDiv.appendChild(posDiv);
-          posicoes[posNum] = { livre: true, voo: null };
+          containerPos.appendChild(posDiv);
+          posicoes[posNum] = {livre:true, voo:null};
         }
-        terminal.appendChild(posicoesDiv);
+        terminal.appendChild(containerPos);
         painel.appendChild(terminal);
       }
     }
@@ -303,16 +306,17 @@
       const container = document.getElementById('lista-voos');
       container.innerHTML = '';
       const agora = new Date();
-      voos.forEach(voo => {
-        if(voo.horario >= agora && voo.horario <= new Date(agora.getTime() + 3600000) && !chegadas.some(c => c.id === voo.id)) {
-          const div = document.createElement('div');
-          div.className = 'voo-item';
-          div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia})<br>
-            <label for="sel-${voo.id}">Alocar posição:</label>
-            <select id="sel-${voo.id}" aria-label="Selecionar posição para voo ${voo.id}" onchange="alocarVoo('${voo.id}', this)">
-            <option value="">-- Selecionar --</option></select>`;
-          container.appendChild(div);
-        }
+      voos.forEach(voo=>{
+          if(voo.horario >= agora && voo.horario <= new Date(agora.getTime()+3600000) && !chegadas.some(c=>c.id===voo.id)){
+              const div = document.createElement('div');
+              div.className = 'voo-item';
+              div.innerHTML = 
+                `<strong>${voo.id}</strong> (${voo.companhia})<br>`+
+                `<label for="sel-${voo.id}">Alocar posição:</label>`+
+                `<select id="sel-${voo.id}" aria-label="Selecionar posição para voo ${voo.id}" onchange="alocarVoo('${voo.id}', this)">`+
+                `<option value="">-- Selecionar --</option></select>`;
+              container.appendChild(div);
+          }
       });
       atualizarDropdowns();
     }
@@ -320,11 +324,11 @@
     function alocarVoo(vooId, select) {
       const pos = select.value;
       if(!pos) return;
-      if(Date.now() < pousoBloqueadoAte) {
+      if(Date.now() < pousoBloqueadoAte){
         alert(`Pousos bloqueados por mais ${Math.ceil((pousoBloqueadoAte - Date.now())/1000)} segundos.`);
         select.value = ""; return;
       }
-      if(!posicoes[pos].livre) {
+      if(!posicoes[pos].livre){
         alert('Posição já ocupada!');
         select.value = ""; return;
       }
@@ -347,7 +351,7 @@
       const voo = voos.find(v => v.id === vooId);
       if(!voo) return;
       if(!chegadas.some(c => c.id === vooId)) {
-        chegadas.push({...voo, status: 'aguardando'});
+        chegadas.push({...voo, status:'aguardando'});
         atualizarListaChegadas();
       }
     }
@@ -358,8 +362,8 @@
       chegadas.forEach(voo => {
         const div = document.createElement('div');
         div.className = 'chegada-item';
-        let btnTroca = voo.posicao ? `<button onclick="trocarPosicaoInit('${voo.id}')">Trocar Posição</button>` : '';
-        div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia} - ${voo.modelo})<br>Status: ${voo.status}${voo.posicao ? ' | Posição: ' + voo.posicao : ''} ${btnTroca}`;
+        let btnTrocar = voo.posicao ? `<button onclick="trocarPosicaoInit('${voo.id}')">Trocar Posição</button>` : '';
+        div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia} - ${voo.modelo})<br>Status: ${voo.status}${voo.posicao ? ' | Posição: ' + voo.posicao : ''} ${btnTrocar}`;
         container.appendChild(div);
       });
     }
@@ -381,7 +385,7 @@
     }
 
     function iniciarPouso(vooId, pos) {
-      const idx = chegadas.findIndex(v=> v.id === vooId);
+      const idx = chegadas.findIndex(v=>v.id === vooId);
       if(idx === -1) return;
       chegadas[idx].status = 'pousando';
       atualizarListaChegadas();
@@ -391,24 +395,20 @@
         chegadas[idx].status = 'taxiando';
         chegadas[idx].posicao = pos;
         atualizarListaChegadas();
-        if(el) {
-          el.innerHTML = `${vooId} <button onclick="finalizarTaxi('${vooId}', '${pos}')">Finalizar Táxi</button>`;
-        }
+        if(el) el.innerHTML = `${vooId} <button onclick="finalizarTaxi('${vooId}', '${pos}')">Finalizar Táxi</button>`;
       }, TEMPO_POUSANDO_MS);
     }
 
     function finalizarTaxi(vooId, pos) {
-      const idx = chegadas.findIndex(v => v.id === vooId);
+      const idx = chegadas.findIndex(v=>v.id === vooId);
       if(idx === -1) return;
       const voo = chegadas.splice(idx, 1)[0];
       atualizarPosicaoOcupacao(pos, vooId, true);
-      partidas.push({...voo, status: 'aguardandoPushback'});
+      partidas.push({...voo, status:'aguardandoPushback'});
       atualizarListaChegadas();
       atualizarListaPartidas();
       const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-      if(el) {
-        el.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
-      }
+      if(el) el.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
     }
 
     function atualizarPosicaoOcupacao(pos, vooId, ocupado) {
@@ -422,21 +422,24 @@
     function trocarPosicaoInit(vooId) {
       let posAtual = null;
       for(const [pos,v] of Object.entries(posicoes)){
-        if(v.voo === vooId && !v.livre) {
+        if(v.voo === vooId && !v.livre){
           posAtual = pos;
           break;
         }
       }
-      if(!posAtual) return alert('Posição atual não encontrada.');
+      if(!posAtual) {alert('Posição atual não encontrada'); return;}
+
       const el = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
       if(!el) return;
+
       const livres = Object.entries(posicoes)
-        .filter(([pos,v]) => v.livre)
-        .map(([pos])=> pos)
-        .filter(p=> p !== posAtual);
-      if(livres.length === 0) return alert('Nenhuma posição livre para troca.');
+        .filter(([pos,v])=>v.livre)
+        .map(([pos])=>pos)
+        .filter(p=>p !== posAtual);
+      if(livres.length === 0){alert('Nenhuma posição livre para troca'); return;}
+
       const select = document.createElement('select');
-      livres.forEach(p => {
+      livres.forEach(p=>{
         const opt = document.createElement('option');
         opt.value = p;
         opt.textContent = p;
@@ -448,45 +451,49 @@
     }
 
     function trocarPosicaoConfirm(vooId, posAtual, posNova) {
-      if(!posicoes[posNova].livre) {
-        alert('Posição nova já ocupada.');
+      if(!posicoes[posNova].livre){
+        alert('Posição nova já ocupada');
         return;
       }
       atualizarPosicaoOcupacao(posAtual, vooId, false);
       atualizarPosicaoOcupacao(posNova, vooId, true);
-      const elAntigo = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
-      if(elAntigo) {
-        elAntigo.classList.remove('ocupada');
-        elAntigo.classList.add('livre');
-        elAntigo.textContent = posAtual;
+
+      const elAnt = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
+      if(elAnt){
+        elAnt.classList.remove('ocupada');
+        elAnt.classList.add('livre');
+        elAnt.textContent = posAtual;
       }
       const elNovo = document.querySelector(`.posicao[data-codigo="${posNova}"]`);
-      if(elNovo) {
+      if(elNovo){
         elNovo.classList.remove('livre');
         elNovo.classList.add('ocupada');
         elNovo.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
       }
-      const idxCh = chegadas.findIndex(v => v.id === vooId);
+
+      const idxCh = chegadas.findIndex(v=>v.id === vooId);
       if(idxCh >= 0) chegadas[idxCh].posicao = posNova;
-      const idxPa = partidas.findIndex(v => v.id === vooId);
+
+      const idxPa = partidas.findIndex(v=>v.id === vooId);
       if(idxPa >= 0) partidas[idxPa].posicao = posNova;
+
       atualizarListaChegadas();
       atualizarListaPartidas();
       atualizarDropdowns();
     }
 
     function pushback(vooId) {
-      if(Date.now() < decolagemBloqueadaAte) {
+      if(Date.now() < decolagemBloqueadaAte){
         alert(`Decolagens bloqueadas por mais ${Math.ceil((decolagemBloqueadaAte - Date.now())/1000)} segundos.`);
         return;
       }
-      const idx = partidas.findIndex(v => v.id === vooId);
+      const idx = partidas.findIndex(v=>v.id === vooId);
       if(idx === -1) return;
       partidas[idx].status = 'taxiando';
       atualizarListaPartidas();
       decolagemBloqueadaAte = Date.now() + TEMPO_BLOQUEIO_DECOLAGEM_MS;
       setTimeout(() => {
-        if(partidas[idx]) {
+        if(partidas[idx]){
           partidas[idx].status = 'aguardandoDecolagem';
           atualizarListaPartidas();
         }
@@ -494,7 +501,7 @@
     }
 
     function autorizarDecolagem(vooId) {
-      const idx = partidas.findIndex(v => v.id === vooId);
+      const idx = partidas.findIndex(v=>v.id === vooId);
       if(idx === -1) return;
       partidas[idx].status = 'decolando';
       atualizarListaPartidas();
@@ -526,7 +533,7 @@
       listarVoos();
     }
 
-    async function init() {
+    async function init(){
       voos = await buscarVoos();
       gerarTerminais();
       listarVoos();
