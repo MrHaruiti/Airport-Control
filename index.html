@@ -1,394 +1,593 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" >
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Controle de Pátio</title>
-    <style>
-        /* Reset e base */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-            Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background: #ffffff;
-            color: #6b7280;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
-        .container {
-            max-width: 1200px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            grid-gap: 2rem;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulador de Controle de Pátio</title>
+  <style>
+    /* Reset e base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: #ffffff;
+      color: #6b7280;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 1rem 4rem;
+    }
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1.75fr;
+      gap: 3rem;
+    }
 
-        /* Painel lateral */
-        aside {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-        section h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 0.75rem;
-        }
-        .voo-item, .chegada-item, .partida-item {
-            background: #f9fafb;
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-            padding: 1rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #374151;
-            user-select: none;
-            line-height: 1.3;
-        }
-        .voo-status {
-            font-weight: 500;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            color: #9ca3af;
-        }
-        select, button {
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            border-radius: 0.5rem;
-            border: 1px solid #d1d5db;
-            padding: 0.3rem 0.6rem;
-            background: white;
-            color: #374151;
-            cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease;
-            outline-offset: 2px;
-        }
-        select:focus, button:focus {
-            outline: 2px solid #2563eb;
-            outline-offset: 2px;
-        }
-        select:hover, button:hover:not(:disabled) {
-            background: #e0e7ff;
-        }
-        button:disabled {
-            cursor: default;
-            background: #f3f4f6;
-            color: #9ca3af;
-        }
+    /* Painel lateral */
+    aside {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+    section h2 {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 1.25rem;
+      line-height: 1.1;
+      user-select: none;
+    }
+    .voo-item, .chegada-item, .partida-item {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 6px rgb(0 0 0 / 0.12);
+      padding: 1.1rem 1.2rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #374151;
+      user-select: none;
+      margin-bottom: 0.875rem;
+      cursor: default;
+      line-height: 1.25;
+      border: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    .voo-item:hover,
+    .chegada-item:hover,
+    .partida-item:hover {
+      border-color: #2563eb;
+    }
+    .voo-status {
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+      color: #9ca3af;
+      user-select: none;
+    }
+    select, button {
+      margin-top: 0.6rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #d1d5db;
+      padding: 0.45rem 0.9rem;
+      background: white;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.25s ease, color 0.25s ease;
+      outline-offset: 3px;
+      user-select: none;
+      font-weight: 600;
+      min-width: 100%;
+      box-sizing: border-box;
+    }
+    select:focus, button:focus {
+      outline: 2.5px solid #2563eb;
+      outline-offset: 3px;
+    }
+    select:hover, button:hover:not(:disabled) {
+      background: #e0e7ff;
+    }
+    button:disabled {
+      cursor: default;
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
 
-        /* Painel principal - Terminal */
-        main #painel {
-            display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(210px,1fr));
-            gap: 1.25rem;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-        .terminal {
-            background: #f9fafb;
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            user-select: none;
-        }
-        .terminal h3 {
-            margin: 0 0 0.75rem 0;
-            font-weight: 700;
-            color: #111827;
-            font-size: 1.125rem;
-            text-align: center;
-        }
-        .posicoes {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-gap: 0.375rem;
-            justify-items: center;
-        }
-        .posicao {
-            width: 60px;
-            height: 32px;
-            background: #e5e7eb;
-            border-radius: 0.5rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.75rem;
-            color: #374151;
-            cursor: default;
-            padding: 0.2rem 0.3rem;
-            box-shadow: inset 0 0 0 1px #d1d5db;
-            text-align: center;
-            position: relative;
-            user-select: none;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .posicao.livre {
-            cursor: pointer;
-            background: #d1fae5;
-            box-shadow: inset 0 0 0 1px #10b981;
-            color: #065f46;
-        }
-        .posicao.livre:hover {
-            background: #34d399;
-            box-shadow: inset 0 0 0 2px #059669;
-            color: #064e3b;
-        }
-        .posicao.ocupada {
-            background: #fef3c7;
-            box-shadow: inset 0 0 0 1px #fbbf24;
-            color: #b45309;
-            cursor: default;
-        }
-        .posicao .posicao-voo {
-            font-weight: 600;
-            font-size: 0.65rem;
-            line-height: 1.1;
-            user-select: text;
-        }
-        .posicao button,
-        .posicao select {
-            font-size: 0.6rem;
-            margin-top: 0.15rem;
-            padding: 1px 3px;
-            border-radius: 0.35rem;
-            background: #2563eb;
-            border: none;
-            color: white;
-            cursor: pointer;
-            user-select: none;
-            appearance: none;
-            outline-offset: 2px;
-            transition: background-color 0.3s ease;
-            width: fit-content;
-            max-width: 56px;
-        }
-        .posicao button:hover {
-            background: #1d4ed8;
-        }
-    </style>
+    /* Painel principal - Terminal */
+    main #painel {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+      gap: 1.75rem;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding-right: 1rem;
+      user-select: none;
+    }
+    .terminal {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.12);
+      padding: 1.15rem 1.2rem 1.45rem;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e7eb;
+      user-select: none;
+    }
+    .terminal h3 {
+      margin: 0 0 1.25rem 0;
+      font-weight: 800;
+      color: #111827;
+      font-size: 1.5rem;
+      text-align: center;
+      letter-spacing: -0.02em;
+      user-select: text;
+    }
+    .posicoes {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.55rem;
+      justify-items: center;
+    }
+    .posicao {
+      width: 60px;
+      height: 34px;
+      background: #e5e7eb;
+      border-radius: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #374151;
+      cursor: default;
+      padding: 0.26rem 0.4rem;
+      box-shadow: inset 0 0 0 1px #d1d5db;
+      text-align: center;
+      position: relative;
+      user-select: none;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+    .posicao.livre {
+      cursor: pointer;
+      background: #d1fae5;
+      box-shadow: inset 0 0 0 1.5px #10b981;
+      color: #065f46;
+    }
+    .posicao.livre:hover {
+      background: #34d399;
+      box-shadow: inset 0 0 0 2.5px #059669;
+      color: #064e3b;
+    }
+    .posicao.ocupada {
+      background: #fef3c7;
+      box-shadow: inset 0 0 0 1.75px #fbbf24;
+      color: #b45309;
+      cursor: default;
+    }
+    .posicao .posicao-voo {
+      font-weight: 700;
+      font-size: 0.7rem;
+      line-height: 1.1;
+      user-select: text;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    .posicao button, .posicao select {
+      font-size: 0.65rem;
+      margin-top: 0.15rem;
+      padding: 3px 6px;
+      border-radius: 0.45rem;
+      background: #2563eb;
+      border: none;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      appearance: none;
+      outline-offset: 2px;
+      transition: background-color 0.3s ease;
+      max-width: 66px;
+      width: 100%;
+      box-sizing: border-box;
+      font-weight: 600;
+    }
+    .posicao button:hover {
+      background: #1d4ed8;
+    }
+    .posicao select {
+      cursor: pointer;
+      text-align-last: center;
+    }
+  </style>
 </head>
 <body>
-    <div class="container" role="main" aria-label="Simulador de Controle de Pátio Aeroportuário">
-        <aside aria-label="Painel lateral com listas de voos">
-            <section id="voos">
-                <h2>Voos Aguardando</h2>
-                <div id="lista-voos" aria-live="polite"></div>
-            </section>
-            <section id="chegadas">
-                <h2>Chegadas (Pousos)</h2>
-                <div id="lista-chegadas" aria-live="polite"></div>
-            </section>
-            <section id="partidas">
-                <h2>Partidas (Decolagens)</h2>
-                <div id="lista-partidas" aria-live="polite"></div>
-            </section>
-        </aside>
+  <div class="container" role="main" aria-label="Simulador de Controle de Pátio Aeroportuário">
+    <aside aria-label="Painel lateral com listas de voos">
+      <section id="voos">
+        <h2>Voos Aguardando</h2>
+        <div id="lista-voos" aria-live="polite"></div>
+      </section>
+      <section id="chegadas">
+        <h2>Chegadas (Pousos)</h2>
+        <div id="lista-chegadas" aria-live="polite"></div>
+      </section>
+      <section id="partidas">
+        <h2>Partidas (Decolagens)</h2>
+        <div id="lista-partidas" aria-live="polite"></div>
+      </section>
+    </aside>
+    <main>
+      <div id="painel" aria-label="Painel dos terminais e posições"></div>
+    </main>
+  </div>
+  <script>
+    // Dados iniciais dos voos com horários simulados para o dia atual + horas
+    const voos = [
+      { id: "EK123", companhia: "Emirates", modelo: "Boeing 777", horario: new Date(new Date().setHours(new Date().getHours() + 1)) },
+      { id: "AF456", companhia: "Air France", modelo: "Airbus A320", horario: new Date(new Date().setHours(new Date().getHours() + 2)) },
+      { id: "JL789", companhia: "JAL", modelo: "Boeing 787", horario: new Date(new Date().setHours(new Date().getHours() + 3)) },
+      { id: "LA321", companhia: "LATAM", modelo: "Airbus A350", horario: new Date(new Date().setHours(new Date().getHours() + 4)) },
+      { id: "BA654", companhia: "British Airways", modelo: "Boeing 747", horario: new Date(new Date().setHours(new Date().getHours() + 5)) },
+    ];
 
-        <main>
-            <div id="painel" aria-label="Painel dos terminais e posições"></div>
-        </main>
-    </div>
+    // Estado dos voos e posições
+    const chegadas = [];
+    const partidas = [];
+    const posicoes = {};
+    const posicoesOcupadas = new Set();
 
-    <script>
-        // Dados iniciais dos voos com horários (simulados para hoje)
-        const voos = [
-            { id: "EK123", companhia: "Emirates", modelo: "Boeing 777", horario: new Date(new Date().setHours(new Date().getHours() + 1)) },
-            { id: "AF456", companhia: "Air France", modelo: "Airbus A320", horario: new Date(new Date().setHours(new Date().getHours() + 2)) },
-            { id: "JL789", companhia: "JAL", modelo: "Boeing 787", horario: new Date(new Date().setHours(new Date().getHours() + 3)) },
-            { id: "LA321", companhia: "LATAM", modelo: "Airbus A350", horario: new Date(new Date().setHours(new Date().getHours() + 4)) },
-            { id: "BA654", companhia: "British Airways", modelo: "Boeing 747", horario: new Date(new Date().setHours(new Date().getHours() + 5)) },
-        ];
+    // Tempos em milissegundos conforme regras
+    const TEMPO_POUSANDO_MS = 3 * 60 * 1000; // 3 minutos
+    const TEMPO_BLOQUEIO_POUSO_MS = 35 * 1000; // 35 segundos
+    const TEMPO_DELAY_MS = 15 * 60 * 1000; // 15 minutos
+    const TEMPO_TAXIANDO_MS = 5 * 60 * 1000; // 5 minutos
+    const TEMPO_DECOLAGEM_MS = 15 * 1000; // 15 segundos
+    const TEMPO_BLOQUEIO_DECOLAGEM_MS = 20 * 1000; // 20 segundos
 
-        // Variáveis e estruturas para controle do pátio
-        const chegadas = [];
-        const partidas = [];
-        const posicoes = {};
-        const posicoesOcupadas = new Set();
+    let pousoBloqueadoAté = 0;
+    let decolagemBloqueadaAté = 0;
 
-        const TEMPO_POUSANDO_MS = 3 * 60 * 1000; // 3 minutos
-        const TEMPO_BLOQUEIO_POUSO_MS = 35 * 1000; // 35 segundos
-        const TEMPO_DELAY_MS = 15 * 60 * 1000; // 15 minutos
-        const TEMPO_TAXIANDO_MS = 5 * 60 * 1000; // 5 minutos
-        const TEMPO_DECOLAGEM_MS = 15 * 1000; // 15 segundos
-        const TEMPO_BLOQUEIO_DECOLAGEM_MS = 20 * 1000; // 20 segundos
+    // Criar terminais e posições, gerando códigos únicos (terminal*100 + posição)
+    function gerarTerminais() {
+      const painel = document.getElementById("painel");
+      painel.innerHTML = "";
+      for (let t = 1; t <= 10; t++) {
+        const terminal = document.createElement("div");
+        terminal.className = "terminal";
+        terminal.innerHTML = `<h3>Terminal TPS${t}</h3>`;
+        const posicoesDiv = document.createElement("div");
+        posicoesDiv.className = "posicoes";
 
-        // Inicializa os terminais e posições
-        function gerarTerminais() {
-            const painel = document.getElementById("painel");
-            for (let t = 1; t <= 10; t++) {
-                const terminal = document.createElement("div");
-                terminal.className = "terminal";
-                terminal.innerHTML = `<h3>Terminal TPS${t}</h3>`;
-                const posicoesDiv = document.createElement("div");
-                posicoesDiv.className = "posicoes";
-
-                for (let p = 1; p <= 36; p++) {
-                    const posNum = t * 100 + p;
-                    const posDiv = document.createElement("div");
-                    posDiv.className = "posicao livre";
-                    posDiv.dataset.codigo = posNum;
-                    posDiv.textContent = posNum;
-                    posicoesDiv.appendChild(posDiv);
-                    posicoes[posNum] = { livre: true, voo: null }; // Inicializa as posições
-                }
-
-                terminal.appendChild(posicoesDiv);
-                painel.appendChild(terminal);
-            }
+        for (let p = 1; p <= 36; p++) {
+          const posNum = t * 100 + p;
+          if(posicoes[posNum]){
+            console.warn("Posição repetida detectada:", posNum);
+            continue;
+          }
+          const posDiv = document.createElement("div");
+          posDiv.className = "posicao livre";
+          posDiv.dataset.codigo = posNum;
+          posDiv.textContent = posNum;
+          posicoesDiv.appendChild(posDiv);
+          posicoes[posNum] = { livre: true, voo: null };
         }
 
-        // Atualiza a lista de voos a cada minuto
-        function atualizarVoos() {
-            const agora = new Date();
-            voos.forEach(voo => {
-                if (voo.horario <= new Date(agora.getTime() + 3600000) && !chegadas.some(c => c.id === voo.id)) {
-                    registrarChegada(voo);
-                }
-            });
-            atualizarListaChegadas();
-            atualizarListaPartidas();
+        terminal.appendChild(posicoesDiv);
+        painel.appendChild(terminal);
+      }
+    }
+
+    // Lista voos aguardando 1h antes do horário, sem repetição na fila de chegada
+    function listarVoos() {
+      const container = document.getElementById("lista-voos");
+      container.innerHTML = "";
+      const agora = new Date();
+      voos.forEach(voo => {
+        if (voo.horario >= agora && voo.horario <= new Date(agora.getTime() + 3600000) && !chegadas.some(c => c.id === voo.id)) {
+          const div = document.createElement("div");
+          div.className = "voo-item";
+          div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia})<br>
+          <label for="select-${voo.id}">Alocar posição:</label>
+          <select id="select-${voo.id}" onchange="alocarVoo('${voo.id}', this)" aria-label="Selecionar posição para voo ${voo.id}">
+            <option value="">-- Selecionar --</option>
+          </select>`;
+          container.appendChild(div);
+        }
+      });
+      atualizarDropdowns();
+    }
+
+    // Atualiza selects com posições livres
+    function atualizarDropdowns() {
+      const livres = Object.entries(posicoes)
+        .filter(([, v]) => v.livre)
+        .map(([k]) => k);
+      document.querySelectorAll("select").forEach(select => {
+        const vooId = select.id.replace("select-", "");
+        select.innerHTML = '<option value="">-- Selecionar --</option>';
+        livres.forEach(pos => {
+          const option = document.createElement("option");
+          option.value = pos;
+          option.text = pos;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    // Aloca voo a posição, com bloqueio e registro de chegada
+    function alocarVoo(vooId, select) {
+      const pos = select.value;
+      if (!pos) return;
+
+      if (Date.now() < pousoBloqueadoAté) {
+        alert(`Pousos bloqueados por mais ${Math.ceil((pousoBloqueadoAté - Date.now())/1000)} segundos.`);
+        select.value = "";
+        return;
+      }
+
+      if (!posicoes[pos].livre) {
+        alert("Posição já ocupada!");
+        select.value = "";
+        return;
+      }
+      const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
+      if (el) {
+        el.classList.remove("livre");
+        el.classList.add("ocupada");
+        el.innerHTML = `${vooId} <button onclick="iniciarPouso('${vooId}', '${pos}')">Pousar</button>`;
+        posicoes[pos].livre = false;
+        posicoes[pos].voo = vooId;
+      }
+      posicoesOcupadas.add(pos);
+      select.disabled = true;
+
+      pousoBloqueadoAté = Date.now() + TEMPO_BLOQUEIO_POUSO_MS;
+      registrarChegadaPorId(vooId);
+      atualizarDropdowns();
+      listarVoos();
+    }
+
+    // Registra chegada pelo id do voo
+    function registrarChegadaPorId(vooId) {
+      const voo = voos.find(v => v.id === vooId);
+      if (!voo) return;
+      if (!chegadas.some(c => c.id === vooId)) {
+        chegadas.push({ ...voo, status: 'aguardando' });
+        atualizarListaChegadas();
+      }
+    }
+
+    // Atualizar lista de chegadas
+    function atualizarListaChegadas() {
+      const container = document.getElementById("lista-chegadas");
+      container.innerHTML = "";
+      chegadas.forEach(voo => {
+        const div = document.createElement("div");
+        div.className = "chegada-item";
+        const btnTrocarPos = voo.posicao ? `<button onclick="trocarPosicaoInit('${voo.id}')">Trocar Posição</button>` : "";
+        div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia} - ${voo.modelo})<br>Status: ${voo.status} ${voo.posicao ? ' | Posição: ' + voo.posicao : ''} ${btnTrocarPos}`;
+        container.appendChild(div);
+      });
+    }
+
+    // Atualizar lista de partidas
+    function atualizarListaPartidas() {
+      const container = document.getElementById("lista-partidas");
+      container.innerHTML = "";
+      partidas.forEach(voo => {
+        const div = document.createElement("div");
+        div.className = "partida-item";
+        let btnPushback = '';
+        if(voo.status === "aguardandoPushback"){
+          btnPushback = `<button onclick="pushback('${voo.id}')">Pushback</button>`;
+        } else if(voo.status === "taxiando") {
+          btnPushback = `Status: Taxiando...`;
+        } else if (voo.status === "aguardandoDecolagem") {
+          btnPushback = `<button onclick="autorizarDecolagem('${voo.id}')">Autorizar Decolagem</button>`;
+        } else if(voo.status === "decolando"){
+          btnPushback = `Status: Decolando...`;
         }
 
-        // Registra uma chegada
-        function registrarChegada(voo) {
-            chegadas.push({ id: voo.id, companhia: voo.companhia, modelo: voo.modelo, status: "pousando", horario: voo.horario });
-            atualizarListaChegadas();
-        }
+        div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia} - ${voo.modelo})<br>${btnPushback}`;
+        container.appendChild(div);
+      });
+    }
 
-        // Atualiza a lista de chegadas
-        function atualizarListaChegadas() {
-            const container = document.getElementById("lista-chegadas");
-            container.innerHTML = '';
-            chegadas.forEach(chegada => {
-                const div = document.createElement("div");
-                div.className = "chegada-item";
-                div.innerHTML = `<strong>${chegada.id}</strong> (${chegada.companhia}) - Status: ${chegada.status}`;
-                container.appendChild(div);
-            });
-        }
+    // Iniciar pouso: status 'pousando' 3 minutos, depois retiro botão pousar e estado taxiando
+    function iniciarPouso(vooId, pos) {
+      const vooIndex = chegadas.findIndex(v => v.id === vooId);
+      if(vooIndex === -1) return;
+      chegadas[vooIndex].status = "pousando";
+      atualizarListaChegadas();
 
-        // Atualiza a lista de partidas
-        function atualizarListaPartidas() {
-            const container = document.getElementById("lista-partidas");
-            container.innerHTML = '';
-            partidas.forEach(partida => {
-                const div = document.createElement("div");
-                div.className = "partida-item";
-                div.innerHTML = `<strong>${partida.id}</strong> (${partida.companhia}) - Status: ${partida.status}`;
-                container.appendChild(div);
-            });
-        }
+      const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
+      if(el) el.innerHTML = `${vooId} - Pousando...`;
 
-        // Aloca um voo a uma posição
-        function alocarVoo(vooId, select) {
-            const pos = select.value;
-            if (!pos) return;
-            const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-            if (el && posicoes[pos].livre) {
-                el.classList.remove("livre");
-                el.classList.add("ocupada");
-                el.innerHTML = `${vooId} <button onclick="pousar('${vooId}', '${pos}')">Pousar</button>`;
-                posicoesOcupadas.add(pos);
-                posicoes[pos].livre = false;
-                posicoes[pos].voo = vooId;
-                select.disabled = true;
-                atualizarDropdowns();
-            }
-        }
+      setTimeout(() => {
+        chegadas[vooIndex].status = "taxiando";
+        chegadas[vooIndex].posicao = pos;
+        atualizarListaChegadas();
 
-        // Função para pousar um voo
-        function pousar(vooId, pos) {
-            const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-            if (el) {
-                el.innerHTML = `${vooId} - Pousando...`;
-                setTimeout(() => {
-                    el.innerHTML = `${vooId} <button onclick="decolar('${pos}')">Decolar</button>`;
-                    setTimeout(() => {
-                        el.classList.remove("ocupada");
-                        el.classList.add("livre");
-                        el.textContent = pos;
-                        posicoesOcupadas.delete(pos);
-                        posicoes[pos].livre = true;
-                        posicoes[pos].voo = null;
-                        atualizarDropdowns();
-                    }, 300000); // 5 minutos
-                }, 180000); // 3 minutos
-            }
+        if(el) {
+          el.innerHTML = `${vooId} <button onclick="finalizarTaxi('${vooId}', '${pos}')">Finalizar Táxi</button>`;
         }
+      }, TEMPO_POUSANDO_MS);
+    }
 
-        // Função para decolar um voo
-        function decolar(pos) {
-            const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-            if (el) {
-                const vooId = el.textContent.split(' ')[0]; // Extrai o ID do voo
-                el.innerHTML = `${vooId} - Taxiando...`;
-                setTimeout(() => {
-                    el.innerHTML = `${vooId} - Autorizar Decolagem <button onclick="confirmarDecolagem('${pos}')">Pushback</button>`;
-                }, TEMPO_TAXIANDO_MS);
-            }
+    // Finaliza taxi, voo pronto para partida
+    function finalizarTaxi(vooId, pos) {
+      const vooIndex = chegadas.findIndex(v => v.id === vooId);
+      if(vooIndex === -1) return;
+
+      const voo = chegadas.splice(vooIndex, 1)[0];
+      actualizarPosicaoOcupacao(pos, vooId, true);
+
+      partidas.push({...voo, status: "aguardandoPushback"});
+      atualizarListaChegadas();
+      atualizarListaPartidas();
+
+      const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
+      if(el){
+        el.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
+      }
+    }
+
+    // Atualiza objeto posições para ocupação
+    function actualizarPosicaoOcupacao(pos, vooId, ocupado){
+      posicoes[pos].livre = !ocupado;
+      posicoes[pos].voo = ocupado ? vooId : null;
+      if(!ocupado){
+        posicoesOcupadas.delete(pos);
+      } else {
+        posicoesOcupadas.add(pos);
+      }
+      atualizarDropdowns();
+    }
+
+    // Trocar posição inicia: substitui conteúdo da posição atual por select de posições livres
+    function trocarPosicaoInit(vooId){
+      let posAtual = null;
+      for(const [pos, val] of Object.entries(posicoes)){
+        if(val.voo === vooId && !val.livre){
+          posAtual = pos;
+          break;
         }
+      }
+      if(!posAtual) return alert("Posição atual não encontrada.");
 
-        // Confirma a decolagem
-        function confirmarDecolagem(pos) {
-            const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-            if (el) {
-                const vooId = el.textContent.split(' ')[0]; // Extrai o ID do voo
-                el.innerHTML = `${vooId} - Decolando...`;
-                setTimeout(() => {
-                    el.classList.remove("ocupada");
-                    el.classList.add("livre");
-                    el.textContent = pos;
-                    posicoesOcupadas.delete(pos);
-                    posicoes[pos].livre = true;
-                    posicoes[pos].voo = null;
-                    registrarPartida(vooId);
-                    atualizarDropdowns();
-                }, TEMPO_DECOLAGEM_MS);
-            }
+      const el = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
+      if(!el) return;
+
+      const livres = Object.entries(posicoes)
+        .filter(([pos, v]) => v.livre)
+        .map(([pos]) => pos)
+        .filter(p => p !== posAtual);
+      if(livres.length === 0) return alert("Nenhuma posição livre disponível para troca.");
+
+      const select = document.createElement("select");
+      livres.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p;
+        select.appendChild(opt);
+      });
+      select.onchange = () => trocarPosicaoConfirm(vooId, posAtual, select.value);
+      el.innerHTML = "";
+      el.appendChild(select);
+    }
+
+    // Confirma troca de posição após seleção
+    function trocarPosicaoConfirm(vooId, posAtual, posNova){
+      if(!posicoes[posNova].livre){
+        alert("Posição nova já ocupada.");
+        return;
+      }
+      actualizarPosicaoOcupacao(posAtual, vooId, false);
+      actualizarPosicaoOcupacao(posNova, vooId, true);
+
+      const elAntigo = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
+      if(elAntigo) {
+        elAntigo.classList.remove("ocupada");
+        elAntigo.classList.add("livre");
+        elAntigo.textContent = posAtual;
+      }
+      const elNovo = document.querySelector(`.posicao[data-codigo="${posNova}"]`);
+      if(elNovo){
+        elNovo.classList.remove("livre");
+        elNovo.classList.add("ocupada");
+        elNovo.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
+      }
+
+      const chIndex = chegadas.findIndex(v => v.id === vooId);
+      if(chIndex >= 0){
+        chegadas[chIndex].posicao = posNova;
+      }
+      const pIndex = partidas.findIndex(v => v.id === vooId);
+      if(pIndex >= 0){
+        partidas[pIndex].posicao = posNova;
+      }
+      atualizarListaChegadas();
+      atualizarListaPartidas();
+      atualizarDropdowns();
+    }
+
+    // Pushback inicia o taxi, 20s bloqueio entre decolagens
+    function pushback(vooId){
+      if(Date.now() < decolagemBloqueadaAté){
+        alert(`Decolagens bloqueadas por mais ${Math.ceil((decolagemBloqueadaAté - Date.now())/1000)} segundos.`);
+        return;
+      }
+      const vooIndex = partidas.findIndex(v => v.id === vooId);
+      if(vooIndex === -1) return;
+
+      partidas[vooIndex].status = "taxiando";
+      atualizarListaPartidas();
+
+      decolagemBloqueadaAté = Date.now() + TEMPO_BLOQUEIO_DECOLAGEM_MS;
+
+      setTimeout(() => {
+        if(partidas[vooIndex]){
+          partidas[vooIndex].status = "aguardandoDecolagem";
+          atualizarListaPartidas();
         }
+      }, TEMPO_TAXIANDO_MS);
+    }
 
-        // Registra uma partida
-        function registrarPartida(vooId) {
-            const voo = chegadas.find(c => c.id === vooId);
-            if (voo) {
-                partidas.push({ id: voo.id, companhia: voo.companhia, modelo: voo.modelo, status: "decolando" });
-                atualizarListaPartidas();
-                setTimeout(() => {
-                    partidas = partidas.filter(p => p.id !== vooId);
-                    atualizarListaPartidas();
-                }, 5000); // Simula o tempo de decolagem
-            }
+    // Autoriza a decolagem, remove avião da posição após decolagem
+    function autorizarDecolagem(vooId){
+      const vooIndex = partidas.findIndex(v => v.id === vooId);
+      if(vooIndex === -1) return;
+
+      partidas[vooIndex].status = "decolando";
+      atualizarListaPartidas();
+
+      setTimeout(() => {
+        const pos = partidas[vooIndex].posicao;
+        if(pos){
+          actualizarPosicaoOcupacao(pos, vooId, false);
         }
+        partidas.splice(vooIndex, 1);
+        atualizarListaPartidas();
+        listarVoos();  // Pode reaparecer voo no próximo dia
+      }, TEMPO_DECOLAGEM_MS);
+    }
 
-        // Atualiza os dropdowns de alocação
-        function atualizarDropdowns() {
-            const livres = Array.from(document.querySelectorAll(".posicao.livre"))
-                                .map(p => p.dataset.codigo);
-            document.querySelectorAll("select").forEach(select => {
-                select.innerHTML = '<option value="">-- Selecionar --</option>';
-                livres.forEach(pos => {
-                    const option = document.createElement("option");
-                    option.value = pos;
-                    option.text = pos;
-                    select.appendChild(option);
-                });
-            });
+    // Atualização periódica para reapresentação e lógica de tempo
+    setInterval(() => {
+      const agora = new Date();
+      voos.forEach(voo => {
+        const emChegada = chegadas.some(v => v.id === voo.id);
+        const emPartida = partidas.some(v => v.id === voo.id);
+        if(!emChegada && !emPartida){
+          if(voo.horario < agora){
+            voo.horario = new Date(voo.horario.getTime() + 24 * 3600000);
+          }
+          if(voo.horario <= new Date(agora.getTime() + 3600000)){
+            registrarChegadaPorId(voo.id);
+          }
         }
+      });
+      atualizarListaChegadas();
+      atualizarListaPartidas();
+      listarVoos();
+    }, 60000);
 
-        // Inicializa o sistema
-        gerarTerminais();
-        listarVoos();
-        setInterval(atualizarVoos, 60000); // Atualiza a cada minuto
-    </script>
+    // Inicialização
+    gerarTerminais();
+    listarVoos();
+    atualizarListaChegadas();
+    atualizarListaPartidas();
+
+  </script>
 </body>
 </html>
+
