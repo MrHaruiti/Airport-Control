@@ -39,17 +39,6 @@
     color: #111827;
     user-select: none;
   }
-  header nav a {
-    margin-left: 1.5rem;
-    text-decoration: none;
-    color: #6b7280;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: color 0.25s ease;
-  }
-  header nav a:hover {
-    color: #2563eb;
-  }
   aside {
     display: flex;
     flex-direction: column;
@@ -224,11 +213,7 @@
 </head>
 <body>
 <header>
-  <div>Airport Control Simulator</div>
-  <nav>
-    <a href="#">Docs</a>
-    <a href="#">GitHub</a>
-  </nav>
+  <div>Simulador de Controle de Pátio</div>
 </header>
 <div class="container" role="main" aria-label="Simulador de Controle de Pátio">
   <aside aria-label="Painel lateral com listas de voos">
@@ -243,6 +228,12 @@
     <section id="partidas">
       <h2>Partidas (Decolagens)</h2>
       <div id="lista-partidas" aria-live="polite"></div>
+    </section>
+    <section id="importacao">
+      <h2>Importar Voos</h2>
+      <input type="file" id="file-input" accept=".json" />
+      <button id="import-button">Importar</button>
+      <div id="import-status" aria-live="polite"></div>
     </section>
   </aside>
   <main>
@@ -269,6 +260,13 @@
   let decolagemBloqueadaAte = 0;
 
   async function buscarVoos() {
+    // Verifica se os voos estão no localStorage
+    const voosSalvos = localStorage.getItem('voos');
+    if (voosSalvos) {
+      return JSON.parse(voosSalvos).map(v => ({...v, horario: new Date(v.horario)}));
+    }
+
+    // Se não houver voos salvos, busca da URL
     try {
       const url = 'https://raw.githubusercontent.com/MrHaruiti/Airport-Control/refs/heads/main/backup_voos.json';
       const res = await fetch(url);
@@ -419,150 +417,4 @@
       chegadas[idx].posicao = pos;
       atualizarListaChegadas();
       if(el) el.innerHTML = `${vooId} <button onclick="finalizarTaxi('${vooId}', '${pos}')">Finalizar Táxi</button>`;
-    }, TEMPO_POUSANDO_MS);
-  }
-
-  function finalizarTaxi(vooId, pos) {
-    const idx = chegadas.findIndex(v => v.id === vooId);
-    if(idx === -1) return;
-
-    const voo = chegadas.splice(idx, 1)[0];
-    atualizarPosicaoOcupacao(pos, vooId, true);
-    partidas.push({...voo, status:'aguardandoPushback'});
-    atualizarListaChegadas();
-    atualizarListaPartidas();
-
-    const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
-    if(el) el.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
-  }
-
-  function atualizarPosicaoOcupacao(pos, vooId, ocupado) {
-    posicoes[pos].livre = !ocupado;
-    posicoes[pos].voo = ocupado ? vooId : null;
-    if(ocupado) posicoesOcupadas.add(pos);
-    else posicoesOcupadas.delete(pos);
-    atualizarDropdowns();
-  }
-
-  function trocarPosicaoInit(vooId) {
-    let posAtual = null;
-    for(const [pos,v] of Object.entries(posicoes)) {
-      if(v.voo === vooId && !v.livre) {
-        posAtual = pos;
-        break;
-      }
-    }
-    if(!posAtual) {alert('Posição atual não encontrada'); return;}
-    const el = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
-    if(!el) return;
-    const livres = Object.entries(posicoes).filter(([pos,v])=>v.livre).map(([pos])=>pos).filter(p => p !== posAtual);
-    if(livres.length === 0) {alert('Nenhuma posição livre para troca'); return;}
-    const select = document.createElement('select');
-    livres.forEach(p=>{
-      const opt = document.createElement('option');
-      opt.value = p;
-      opt.textContent = p;
-      select.appendChild(opt);
-    });
-    select.onchange = () => trocarPosicaoConfirm(vooId, posAtual, select.value);
-    el.innerHTML = '';
-    el.appendChild(select);
-  }
-
-  function trocarPosicaoConfirm(vooId, posAtual, posNova) {
-    if(!posicoes[posNova].livre) {alert('Posição nova já ocupada'); return;}
-    atualizarPosicaoOcupacao(posAtual, vooId, false);
-    atualizarPosicaoOcupacao(posNova, vooId, true);
-    const elAntigo = document.querySelector(`.posicao[data-codigo="${posAtual}"]`);
-    if(elAntigo) {
-      elAntigo.classList.remove('ocupada');
-      elAntigo.classList.add('livre');
-      elAntigo.textContent = posAtual;
-    }
-    const elNovo = document.querySelector(`.posicao[data-codigo="${posNova}"]`);
-    if(elNovo) {
-      elNovo.classList.remove('livre');
-      elNovo.classList.add('ocupada');
-      elNovo.innerHTML = `${vooId} <button onclick="trocarPosicaoInit('${vooId}')">Trocar Posição</button>`;
-    }
-    const idxCh = chegadas.findIndex(v => v.id === vooId);
-    if(idxCh >= 0) chegadas[idxCh].posicao = posNova;
-    const idxPa = partidas.findIndex(v => v.id === vooId);
-    if(idxPa >= 0) partidas[idxPa].posicao = posNova;
-    atualizarListaChegadas();
-    atualizarListaPartidas();
-    atualizarDropdowns();
-  }
-
-  function pushback(vooId) {
-    if(Date.now() < decolagemBloqueadaAte) {
-      alert(`Decolagens bloqueadas por mais ${Math.ceil((decolagemBloqueadaAte - Date.now())/1000)} segundos.`);
-      return;
-    }
-    const idx = partidas.findIndex(v => v.id === vooId);
-    if(idx === -1) return;
-    partidas[idx].status = 'taxiando';
-    atualizarListaPartidas();
-    decolagemBloqueadaAte = Date.now() + TEMPO_BLOQUEIO_DECOLAGEM_MS;
-    setTimeout(() => {
-      if(partidas[idx]) {
-        partidas[idx].status = 'aguardandoDecolagem';
-        atualizarListaPartidas();
-      }
-    }, TEMPO_TAXIANDO_MS);
-  }
-
-  function autorizarDecolagem(vooId) {
-    const idx = partidas.findIndex(v => v.id === vooId);
-    if(idx === -1) return;
-    partidas[idx].status = 'decolando';
-    atualizarListaPartidas();
-    setTimeout(() => {
-      const pos = partidas[idx].posicao;
-      if(pos) atualizarPosicaoOcupacao(pos, vooId, false);
-      partidas.splice(idx, 1);
-      atualizarListaPartidas();
-      listarVoos();
-    }, TEMPO_DECOLAGEM_MS);
-  }
-
-  async function atualizarSistema() {
-    const agora = new Date();
-    voos.forEach(voo => {
-      const emCh = chegadas.some(v => v.id === voo.id);
-      const emPa = partidas.some(v => v.id === voo.id);
-      if(!emCh && !emPa) {
-        if(voo.horario < agora) {
-          voo.horario = new Date(voo.horario.getTime() + 24*3600000);
-        }
-        if(voo.horario <= new Date(agora.getTime() + 3600000)) {
-          registrarChegadaPorId(voo.id);
-        }
-      }
-    });
-    atualizarListaChegadas();
-    atualizarListaPartidas();
-    listarVoos();
-  }
-
-  async function init() {
-    voos = await buscarVoos();
-    gerarTerminais();
-    listarVoos();
-    atualizarListaChegadas();
-    atualizarListaPartidas();
-    setInterval(atualizarSistema, 60000);
-  }
-
-  window.alocarVoo = alocarVoo;
-  window.iniciarPouso = iniciarPouso;
-  window.finalizarTaxi = finalizarTaxi;
-  window.trocarPosicaoInit = trocarPosicaoInit;
-  window.trocarPosicaoConfirm = trocarPosicaoConfirm;
-  window.pushback = pushback;
-  window.autorizarDecolagem = autorizarDecolagem;
-
-  init();
-</script>
-</body>
-</html>
+   
