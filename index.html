@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Controle de Pátio</title>
+    <style>
+        body { font-family: Arial; display: flex; margin: 0; height: 100vh; }
+        #voos, #painel { padding: 10px; overflow-y: auto; }
+        #voos { width: 30%; border-right: 1px solid #ccc; }
+        #painel { width: 70%; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: flex-start; }
+        .terminal { border: 1px solid #aaa; padding: 5px; width: 220px; }
+        .terminal h3 { margin: 5px 0; font-size: 14px; text-align: center; }
+        .posicoes { display: flex; flex-wrap: wrap; gap: 3px; }
+        .posicao { width: 30px; height: 30px; background: #e0e0e0; display: flex; justify-content: center; align-items: center; font-size: 10px; cursor: pointer; }
+        .ocupada { background: #ff5555; color: white; }
+        .livre:hover { background: #a0e0a0; }
+        .voo-item { margin-bottom: 5px; padding: 5px; border: 1px solid #ccc; }
+        select { width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="voos">
+        <h2>Voos Aguardando</h2>
+        <div id="lista-voos"></div>
+    </div>
+    <div id="painel"></div>
+
+<script>
+    const voos = [
+        { id: "EK123", companhia: "Emirates" },
+        { id: "AF456", companhia: "Air France" },
+        { id: "JL789", companhia: "JAL" },
+        { id: "LA321", companhia: "LATAM" },
+        { id: "BA654", companhia: "British Airways" },
+    ];
+
+    const posicoesOcupadas = new Set();
+
+    function gerarTerminais() {
+        const painel = document.getElementById("painel");
+        for (let t = 1; t <= 10; t++) {
+            const terminal = document.createElement("div");
+            terminal.className = "terminal";
+            terminal.innerHTML = `<h3>Terminal TPS${t}</h3>`;
+            const posicoes = document.createElement("div");
+            posicoes.className = "posicoes";
+
+            for (let p = 1; p <= 36; p++) {
+                const posNum = t * 100 + p;
+                const posDiv = document.createElement("div");
+                posDiv.className = "posicao livre";
+                posDiv.dataset.codigo = posNum;
+                posDiv.textContent = posNum;
+                posicoes.appendChild(posDiv);
+            }
+
+            terminal.appendChild(posicoes);
+            painel.appendChild(terminal);
+        }
+    }
+
+    function listarVoos() {
+        const container = document.getElementById("lista-voos");
+        voos.forEach(voo => {
+            const div = document.createElement("div");
+            div.className = "voo-item";
+            div.innerHTML = `<strong>${voo.id}</strong> (${voo.companhia})<br>
+                <label>Alocar posição:</label>
+                <select onchange="alocarVoo('${voo.id}', this)">
+                    <option value="">-- Selecionar --</option>
+                </select>`;
+            container.appendChild(div);
+        });
+        atualizarDropdowns();
+    }
+
+    function atualizarDropdowns() {
+        const livres = Array.from(document.querySelectorAll(".posicao.livre"))
+                            .map(p => p.dataset.codigo);
+        document.querySelectorAll("select").forEach(select => {
+            select.innerHTML = '<option value="">-- Selecionar --</option>';
+            livres.forEach(pos => {
+                const option = document.createElement("option");
+                option.value = pos;
+                option.text = pos;
+                select.appendChild(option);
+            });
+        });
+    }
+
+    function alocarVoo(vooId, select) {
+        const pos = select.value;
+        if (!pos) return;
+        const el = document.querySelector(`.posicao[data-codigo="${pos}"]`);
+        if (el && !el.classList.contains("ocupada")) {
+            el.classList.remove("livre");
+            el.classList.add("ocupada");
+            el.textContent = vooId;
+            posicoesOcupadas.add(pos);
+            select.disabled = true;
+            atualizarDropdowns();
+        }
+    }
+
+    gerarTerminais();
+    listarVoos();
+</script>
+</body>
+</html>
